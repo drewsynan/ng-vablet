@@ -1,4 +1,11 @@
 (function (definition) {
+
+    // Turn off strict mode for this function so we can assign to global.vablet
+
+    // This file will function properly as a <script> tag, or a module
+    // using CommonJS and NodeJS or RequireJS module formats.  In
+    // Common/Node/RequireJS, the module exports the Q API and when
+    // executed as a simple <script>, it creates a Q global instead.
     
     // angularJS
     if (typeof angular === "object") {
@@ -8,7 +15,7 @@
     		   			return definition($q);
     		   		}
     		   })
-    		   .provider('vablet', function(){
+    		   .provider('vablet', function(){ // production, ignore all mock specs
     		   		this.$get = function($q){
     		   			return definition($q, true);
     		   		}
@@ -33,14 +40,15 @@
         	throw new Error("Vablet: Could not find Q library");
         }
     }
-})(function (Q, IN_PRODUCTION) {
-'use strict';
+})(function vabletApi(Q,IN_PRODUCTION) {
 
 IN_PRODUCTION = IN_PRODUCTION || false;
 
-var vablet = (function(){
+/*
+ * TYPES *
+         */
 
-	var types = {
+var types = {
 		any: (function(){
 				var f = function any(x) { return true; };
 				f.toString = function() { return "any"; }
@@ -75,6 +83,11 @@ var vablet = (function(){
 				var f = function func(x) { return typeof x === 'function'; };
 				f.toString = function() { return "function"; };
 				return f;
+		}()),
+		numberOrString: (function(){
+			var f = function(x) { return types.string(x) || types.number(x); };
+			f.toString = function numberOrString() { return "number or string"; }
+			return f;
 		}()),
 		arrayOf: function(t) { 
 			var f = function arrayOf(x) { 
@@ -133,470 +146,721 @@ var vablet = (function(){
 		}
 	};
 
-	types.vablet = {
-		email: types.objectOf({name: types.string, email: types.string}),
-		numberOrString: (function(){
-			var f = function(x) { return types.string(x) || types.number(x); };
-			f.toString = function numberOrString() { return "number or string"; }
-			return f;
-		}())
-	}
-
-	function arg(name, type, required) {
-		if(required === undefined) required = true; // default is required
-		type = type || types.any;
-
-		return {name: name, type: type, required: required}
-	}
-
-	var vabletApi = {
-		addFileIdsToUserFolder: 
-			[
-				arg('folderName',			types.string),
-				arg('fileIdArray',			types.arrayOf(types.vablet.numberOrString)),
-			],
-		addFileNamesToUserFolder: 
-			[
-				arg('folderName',			types.string),
-				arg('fileNameArray',		types.arrayOf(types.string))
-
-			],
-		changeActiveFolderTo: 
-			[
-				arg('folderName',			types.string)
-			],
-		CloseFile:
-			[
-				arg('fileId',				types.vablet.numberOrString)
-			],
-		ConvertHTMLAttachmentToPdfAndSend: 
-			[
-				arg('to',					types.arrayOf(types.string)),
-				arg('cc',					types.string, false),
-				arg('bcc',					types.string, false),
-				arg('company',				types.string, false),
-				arg('subject',				types.string),
-				arg('queueIfNotAbleToSend', types.boolean),
-				arg('pdfPageSize',			types.objectOf({width: types.vablet.numberOrString, height: types.vablet.numberOrString}), true),
-				arg('attachmentDataBase64Encoded', types.boolean),
-				arg('attachmentName',		types.string)
-			],
-		createUserFolder: 
-			[
-				arg('folderName',			types.string)
-			],
-		enableNativeDisplayOfHtmlSelectionForHTMLPaths: 
-			[
-				arg('htmlPaths', 			types.string)
-			],
-		endSession: 
-			[],
-		getFileWithId: 
-			[
-				arg('fileId', 				types.vablet.numberOrString)
-			],
-		getFolderFullDataById: 
-			[
-				arg('folderId', 			types.vablet.numberOrString)
-			],
-		getFolderFullDataByPath: 
-			[
-				arg('folderPath', 			types.string)
-			],
-		getLatestManifest: 
-			[],
-		GetInfoManifest:
-			[], /// deprecated ???
-		GetSalesForceContact: 
-			[ // ??? deprecated ???
-				arg('fileId', 				types.vablet.numberOrString)
-			],
-		GetSalesForceSelectedContacts: 
-			[],
-		getSalesforceContactIfEnabledElseNative: 
-			[],
-		GetSelectedContactsIndependentOfSessionType: 
-			[],
-		getThumbnailForFileId: 
-			[
-				arg('fileId',				types.vablet.numberOrString)
-			],
-		getXMLForFileId: 
-			[
-				arg('fileId',				types.vablet.numberOrString)
-			],
-		getXMLForFileName: 
-			[
-				arg('fileName',				types.string)
-			],
-		HideCloseButton: 
-			[
-				arg('fileId',				types.vablet.numberOrString)
-			],
-		hideHtmlSelection: 
-			[],
-		presentSalesforceCalendar: 
-			[],
-		presentSalesforceMenuFromButtonWithId: 
-			[
-				arg('buttonId',				types.vablet.numberOrString)
-			],
-		reportPageChange: 
-			[
-				arg('newPage',				types.number)
-			],
-		searchForTerm: 
-			[
-				arg('searchTerm',			types.string),
-				arg('enableLiveUpdates',	types.boolean)
-			],
-		SendEmail: 
-			[
-				arg('to',					types.arrayOf(types.string)),
-				arg('cc',					types.arrayOf(types.string)),
-				arg('bcc',					types.arrayOf(types.string)),
-				arg('body',					types.string),
-				arg('company',				types.string, false),
-				arg('subject',				types.string),
-				arg('queueIfNotAbleToSend', types.boolean),
-				arg('attachmentDataBase64Encoded', types.boolean, false),
-				arg('attachmentName', 		types.string, false),
-				arg('disableEmailTemplate', types.boolean, false),
-				arg('disableAttachment', 	types.boolean, false)
-			],
-		sendEmailForFiles: 
-			[
-				arg('to',					types.arrayOf(types.vablet.email)),
-				arg('cc', 					types.arrayOf(types.string), false),
-				arg('bcc',					types.arrayOf(types.string), false),
-				arg('fileIds',				types.arrayOf(types.vablet.numberOrString)),
-				arg('body',					types.string),
-				arg('company',				types.string, false),
-				arg('subject',				types.string),
-				arg('includeAnnotation', 	types.boolean,	false),
-				arg('sendAsLink', 			types.boolean, false),
-				arg('sendAsAttachment', 	types.boolean,	false),
-				arg('compressOutputAtNumberOfBytes', types.valueOf(-1)),
-			],
-		setCompletedToTrue: 
-			[
-				arg('fileId',				types.vablet.numberOrString)
-			],
-		showHtmlSelectionForHTMLPaths: 
-			[
-				arg('htmlPaths',			types.string)
-			],
-		snapshotCurrentPage: 
-			[
-				arg('pageName',				types.string)
-			],
-		startSessionWithSalesforceContactId: [
-				arg('contactId', 			types.vablet.numberOrString)
-			],
-		startSessionWithoutContact: 
-			[],
-		SupressFileToolbar: 
-			[
-				arg('fileId', 				types.vablet.numberOrString)
-			],
-		toggleFavoriteStatusForFileWithId: 
-			[
-				arg('fileId', 				types.vablet.numberOrString)
-			],
-		toggleTagStatusForFileWithId:
-			[
-				arg('fileId', 				types.vablet.numberOrString)
-			],
-		useVabletGUIToSendEmailForFiles:
-			[
-				arg('to', 					types.arrayOf(types.vablet.email)),
-				arg('cc', 					types.arrayOf(types.string), false),
-				arg('bcc',					types.arrayOf(types.string), false),
-				arg('fildIds',				types.arrayOf(types.vablet.numberOrString)),
-				arg('body',					types.string),
-				arg('subject',				types.string)
-			]
+function Left(e) { throw new Error(e); }	
+function Right(v) { return v; }
+function optional(t){
+	var f = function(x) {
+		if(x===undefined) {
+			return true;
+		} else {
+			return t(x);
+		}
 	};
+	f.toString = function(){
+		return String(t) + "?";
+	}
+	return f;
+}
 
-	function _emptyObject(){
-		if(Object.create) {
-			return Object.create(null);
+/*
+ * HELPER FUNCTIONS *
+                    */
+
+function getSignature(funcName, funcSpec) {
+	var args = funcSpec.link.map(function(arg){
+		return arg + "<" + String(funcSpec.in[arg]) + ">";
+	}).join(",");
+	return funcName + "(" + args + ")";
+}
+
+function flatMapPromises(func, xs) {
+	if(!Array.isArray(xs)) xs = [xs];
+
+	return Q.allSettled(xs.map(function(x){
+		return func(x);
+	})).then(function(results){
+		return results.filter(function(result){ return result.state === "fulfilled"}) // ignores rejected promises
+				.map(function(result){ return result.value });
+	});
+}
+
+// Check Functions
+function stdCheck(response) { 
+	if(!!response && response.success===true) {
+		return true
+	} else {
+		return stdErr(response);
+	}
+}
+function alwaysSucceeds(x) { return true; }
+
+// Reject Functions
+
+function stdErr(response) { return Left(response.error); };
+
+// Accept Functions
+function extract(key) {
+	return function(response) {
+		if(response[key] !== undefined) { 
+			return Right(response[key]);
 		} else {
-			return {};
+			return Left("Value for key '" + key + "' does not exist, or is undefined.");
+		}
+	}
+}
+function nothing(x) { return; }
+function everything(x) { return x; }
+
+
+/* 
+ * CALL OBJECTS *
+ 	 			*/
+// Standard Call
+function makeCall(funcName, funcArgs) {
+	return {name: funcName, args: funcArgs};
+}
+function getCallArgs(call) {
+	return call.args;
+}
+
+// Mock Call
+function makeMockCall(mockValue, timeout) {
+	return {isMock: true, mockValue: mockValue, timeout: timeout};
+}
+function isMockCall(call) {
+	return call.isMock || false;
+}
+function getMockValue(call) {
+	if(!isMockCall(call)) return Left(TypeError("Call is not a mock call"));
+	return Right(call.mockValue);
+}
+function getMockTimeout(call) {
+	if(!isMockCall(call)) return Left(TypeError("Call is not a mock call"));
+	return Right(call.timeout);
+}
+
+function getCallName(call) {
+	if(isMockCall(call)) {
+		return "__MOCK__";
+	} else {
+		return call.name;
+	}
+}
+
+/* 
+ * API BUILDER *
+ 			   */
+function buildApi(spec, linker, dispatcher) {
+
+
+	function validateArg(argName, arg, spec) { 
+		return spec(arg);
+	}
+
+	function validateArgs(funcName, args, spec) {
+		var errors = [];
+
+		var allValid = true;
+		var argNames = Object.keys(spec.in);
+
+		for(var i=0; i<argNames.length; i++) {
+			var argName = argNames[i];
+			if(!validateArg(argName, args[argName], spec.in[argName])) {
+				errors.push(argName + " expects <" + spec.in[argName] + ">");
+				allValid = false;
+			}
+		}
+
+		if(errors.length) {
+			return Left("Argument type error -> " + errors.join("; ") + "\nFunction signature: " + getSignature(funcName, spec));
+		} else {
+			return Right(allValid);
 		}
 	}
 
-	var MOCK_CALL = "mock_call";
-
-	function makeCall(func, args) {
-		return {func: func, args: args}
+	function digest(outSpec) {
+		return function(response) {
+			if (outSpec.check(response)) {
+				return outSpec.accept(response);
+			} else {
+				return outSpec.reject(response);
+			}
+		}
 	}
 
-	function executeCall(call) {
-		var deferred = Q.defer();
-		// console.log(call.func, call.args);
+	function assembleApiCall(funcName, funcSpec, linker, dispatcher) {
+		return function(/*args*/){
+			var calledArgs = Array.prototype.slice.call(arguments);
 
-		if(call.func === MOCK_CALL) {
+			var apiArgs = linker(funcName, calledArgs, funcSpec);
+			validateArgs(funcName, apiArgs, funcSpec);
+
+			var apiCall;
+			if(this.$$isMocked) {
+				apiCall = makeMockCall(this.$$mockValue, this.$$mockTimeout);
+			} else {
+				apiCall = makeCall(funcName,apiArgs);
+			}
+
+			return dispatcher(apiCall).then(digest(funcSpec.out));
+		}
+	}
+
+	function validateSpec(funcName, funcSpec) {
+		var validSpec = Object.assign(Object.create(null), funcSpec);
+
+		if(validSpec.in === undefined) validSpec.in = Object.create(null);
+		if(typeof validSpec.in !== "object")   return Left(funcName + " -> bad spec: 'in' is not an object");
+
+		if(validSpec.out === undefined) validSpec.out = Object.create(null);
+		if (typeof validSpec.out !== "object") return Left(funcName + " -> bad spec: 'out' is not an object");
+		
+		if(validSpec.link === undefined) {
+			var args = Object.keys(validSpec.in);
+			if(args.length === 0) {
+				validSpec.link = [];
+			} else if(args.length === 1) {
+				validSpec.link = [args[0]]
+			} else {
+				return Left(funcName + " -> bad spec: missing or un-inferrable link specification");
+			}
+		}
+		if (!Array.isArray(validSpec.link))    return Left(funcName + " -> bad spec: 'link' is not an array");
+
+
+		// in types
+		var argNames = Object.keys(validSpec.in);
+		for(var i=0; i<argNames.length; i++) {
+			var name = argNames[i];
+			if(typeof validSpec.in[name] !== "function") return Left(funcName + " -> bad spec: type specification for argument '" + name + "' is not a function");
+		}
+
+		// out defaults
+		if(validSpec.out.check === undefined)  validSpec.out.check = stdCheck;
+		if(validSpec.out.reject === undefined) validSpec.out.reject = stdErr;
+		if(validSpec.out.accept === undefined) validSpec.out.accept = nothing;
+
+		if(typeof validSpec.out.check !== "function")  return Left(funcName + " -> bad spec: out.check is not a function");
+		if(typeof validSpec.out.accept !== "function") return Left(funcName + " -> bad spec: out.accept is not a function");
+		if(typeof validSpec.out.reject !== "function") return Left(funcName + " -> bad spec: out.reject is not a function");
+
+		return validSpec;
+	}
+
+	function assembleApi(apiSpec, linker, dispatcher) {
+		apiFunctionNames = Object.keys(apiSpec);
+		var assembled = apiFunctionNames.reduce(function(assembledApi, funcName){
+			var validSpec = validateSpec(funcName, apiSpec[funcName]);
+			assembledApi[funcName] = assembleApiCall(funcName, validSpec, linker, dispatcher);
+			return assembledApi;
+		}, Object.create(null));
+
+		assembled.registerFunction = function registerFunction(name, func){
+			var registered = Object.assign(Object.create(null), this);
+			registered[name] = func;
+			return Object.freeze(registered);
+		}
+
+		assembled.$$isMocked = false;
+		assembled.$$mockValue = undefined;
+		assembled.$$mockTimeout = undefined;
+
+		assembled.mock = function mock(mockVal,mockTimeout) {
+			if(!IN_PRODUCTION) {
+				var mocked = Object.assign(Object.create(null), this);
+				mocked.$$isMocked = true;
+				mocked.$$mockValue = mockVal;
+				mocked.$$mockTimeout = mockTimeout;
+
+				return Object.freeze(mocked);
+			} else {
+				return this;
+			}
+		}
+
+		assembled.unmock = function unmock() {
+			var unmocked = Object.assign(Object.create(null), this);
+			unmocked.$$isMocked = false;
+			unmocked.$$mockValue = undefined;
+			unmocked.$$mockTimeout = undefined;
+
+			return Object.freeze(unmocked);
+		}
+
+
+		// aliases
+		Object.keys(assembled).filter(function(key){
+			return key[0] === key[0].toUpperCase();
+		}).forEach(function(upperCaseKey){
+			var firstLetter = upperCaseKey[0].toLowerCase();
+			var rest = upperCaseKey.slice(1);
+			var lowerCaseKey = firstLetter + rest;
+
+			if(assembled[lowerCaseKey] === undefined) {
+				assembled[lowerCaseKey] = assembled[upperCaseKey];
+			}
+		});
+
+		return Object.freeze(assembled);
+
+	}
+
+	/////////
+	return assembleApi(spec, linker,dispatcher);
+	////////
+}
+
+// Vablet Dispatch
+function vabletDispatch(call) {
+	// execute the call
+	var deferred = Q.defer();
+	if(isMockCall(call)) {
+		try {
 			window.setTimeout(function(){
-				if(call.args.mockVal.success || call.args.mockVal.success === undefined) {
-					deferred.resolve(call.args.mockVal);
-				} else {
-					deferred.reject(call.args.mockVal.error);
-				}
-			}, call.args.mockTimeout);
-		} else {
-			try {
-				VabletNativeInterface.callNativeMethod(call.func, call.args, function(response){
-					if(response.success) {
-						deferred.resolve(response);
-					} else {
-						deferred.reject(response.error);
-					}
-				});
-			} catch(e) {
-				deferred.reject(e);
-			}
+				deferred.resolve(getMockValue(call));
+			}, getMockTimeout(call));
+		} catch(e) {
+			deferred.reject(e);
 		}
-
-		return deferred.promise;
-	}
-
-	function makeApi(apiDescription) {
-		var apiFunctions = Object.keys(apiDescription);
-
-		var constructedApi = apiFunctions.reduce(function(api, apiFunction){
-			api[apiFunction] = function() {
-				var namedArgs = apiDescription[apiFunction];
-				var calledArgs = (arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments));
-				var apiCallArgs = _emptyObject();
-
-				if (namedArgs.length !== calledArgs.length) {
-					var argList = namedArgs.map(function(a){ 
-						var required = a.required ? "" : "?";
-						return a.name + required + "<" + a.type + ">"; 
-					}).join(",");
-					throw new Error("Wrong # of args. Signature: " + apiFunction + "(" + argList +  ")");
-				} else {
-					for(var i=0; i<namedArgs.length; i++) {
-						if(namedArgs[i].required || calledArgs[i] !== undefined) {
-							if(namedArgs[i].type(calledArgs[i])) {
-								apiCallArgs[namedArgs[i].name] = calledArgs[i];
-							} else {
-								throw new TypeError(apiFunction + ": parameter " + namedArgs[i].name + " expects " + namedArgs[i].type);
-							}
-						}
-					}
-				}
-
-				return makeCall(apiFunction,apiCallArgs);
-			}
-			return api;
-		}, _emptyObject());
-
-		constructedApi.mock = function mock(mockVal, mockTimeout) {
-			if (!IN_PRODUCTION) {
-				var mockedApi = this; //makeApi(apiDescription);
-				var wrapper = _emptyObject();
-
-				Object.keys(mockedApi).forEach(function(funcName){
-					wrapper[funcName] = function(){
-						mockedApi[funcName].apply(null, arguments); // throws
-						return makeCall(MOCK_CALL, {mockVal: mockVal, mockTimeout: mockTimeout});
-					}
-				});
-
-				wrapper.mock = this.mock; // override wrapped function for mock
-
-				return wrapper;
-			} else {
-				return this;
-			}
-		}
-
-		return constructedApi;
-	}
-
-	function blankAPI(){
-		var initial = _emptyObject();
-		initial.$api = Object.freeze(makeApi(vabletApi));
-		initial.$registered = _emptyObject();
-		initial.registerFunction = function(name, func) {
-				if(typeof func !== "function") {
-					throw new TypeError("func must be a function");
-				}
-
-				var o = _emptyObject();
-				o[name] = function() { return func.apply(this, arguments); };
-				Object.assign(this, o);
-				Object.assign(this.$registered, o);
-
-				return this;
-		};
-
-		Object.keys(initial.$api).forEach(function(func){
-			var o = _emptyObject();
-			o[func] = function(){
-				var call = initial.$api[func].apply(null, arguments); // ? built-ins don't use 'this' yet...
-				return executeCall(call);
-			}
-			Object.assign(initial, o);
-		});
-
-		return initial;
-	}
-
-	var wrapped = blankAPI();
-	wrapped.mock = function(){
-		if(!IN_PRODUCTION) {
-			var mockedApi = blankAPI();
-			Object.assign(mockedApi, this.$registered);
-			Object.assign(mockedApi.$registered, this.$registered);
-
-			mockedApi.$api = this.$api.mock.apply(this.$api, arguments);
-
-			// "special" functions that don't need the executor, or to be wrapped
-			mockedApi.mock = this.mock;
-			mockedApi.registerFunction = this.registerFunction;
-
-			return mockedApi;
-		} else {
-			return this;
-		}
-	}
-
-	return wrapped;
-
-}()).registerFunction('getIdForFileName', function(fileName) {
-	var vablet = this;
-
-	function searchForOne(fileName) {
-		return vablet.searchForTerm(fileName, false).then(function(found){
-			var files = found.files;
-			var exactMatches = files.filter(function(file){
-				return file.title === fileName;
+	} else {
+		try {
+			VabletNativeInterface.callNativeMethod(getCallName(call), getCallArgs(call), function(response){
+				deferred.resolve(response);
 			});
-
-			if(!exactMatches.length) {
-				throw new Error("No matches for " + fileName);
-			} else {
-				return exactMatches[0].fileId;
-			}
-		});
+		} catch(e) {
+			deferred.reject(e);
+		}
 	}
 
-	return flatMap(searchForOne, fileName);
+	return deferred.promise;
+}
 
-}).registerFunction('getFileNameForId', function(fileId){
-	var vablet = this;
-	function searchForOne(fileId) {
-		return vablet.getFileWithId(fileId).then(function(found){
-			return found.file.title;
-		});
+// Array linker
+function arrayLinker(funcName, args, apiFuncSpec) {
+
+	if(args.length!==apiFuncSpec.link.length) { return Left("Missing arguments in " + funcName + ". Signature: " + getSignature(funcName, apiFuncSpec)) }
+	
+	var apiArgs = Object.create(null);
+	for(var i=0; i<args.length; i++) {
+		if(args[i] !== undefined) {
+			apiArgs[apiFuncSpec.link[i]] = args[i];
+		}
 	}
-	return flatMap(searchForOne, fileId);
 
-}).registerFunction('loadHCPInfo', function(){
-	return this.GetSalesForceSelectedContacts().then(function(response){
-		if(response.contacts) {
+	return Right(apiArgs);
+}
+
+
+// Object linker
+function objectLink(funcName, args, apiFuncSpec) {
+	if(!args) { return Left("Missing arguments object"); }
+
+	var argsObj = args[0];
+
+	var apiArgs = Object.create(null);
+	Object.keys(apiFuncSpec.in).reduce(function(func){
+		apiArgs[func] = argsObj[func];
+	});
+
+	return Right(apiArgs);
+}
+
+/* Vablet API Spec */
+
+var vabletSpec = {
+	addFileIdsToUserFolder: {
+		in: {
+			folderName: types.string,
+			fileIdArray: types.numberOrString,
+		},
+		link: ['folderName', 'fileIdArray']
+	},
+	addFileNamesToUserFolder: {
+		in: {
+			folderName: types.string,
+			fileNameArray: types.arrayOf(types.string)
+		},
+		link: ['folderName', 'fileNameArray']
+	},
+	changeActiveFolderTo: {
+		in: {
+			folderName: types.string
+		}
+	},
+	closeFile: {
+		in: {
+			fileId: types.numberOrString
+		}
+	},
+	ConvertHTMLAttachmentToPdfAndSend: {
+		in: {
+			to: types.arrayOf(types.string),
+			cc: optional(types.arrayOf(types.string)),
+			bcc: optional(types.arrayOf(types.string)),
+			body: types.string,
+			company: types.string,
+			subject: types.string,
+			queueIfNotAbleToSend: types.boolean,
+			pdfPageSize: types.objectOf({width: types.numberOrString, height: types.numberOrString}),
+			attachmentDataBase64Encoded: types.string,
+			attachmentName: types.string
+		},
+		link: ['to', 'cc', 'bcc', 'body', 'company', 'subject', 'queueIfNotAbleToSend', 'pdfPageSize', 'attachmentDataBase64Encoded', 'attachmentName']
+	},
+	createUserFolder: {
+		in: {
+			folderName: types.string
+		}
+	},
+	enableNativeDisplayOfHtmlSelectionForHTMLPaths: {
+		in: {
+			htmlPaths: types.arrayOf(types.string)
+		}
+	},
+	endSession: {},
+	getFileWithId: {
+		in: {
+			fildId: types.numberOrString
+		},
+		out: {
+			accept: extract('file')
+		}
+	},
+	getFolderFullDataById: {
+		in: {
+			folderId: types.numberOrString
+		},
+		out: {
+			accept: extract('folderData')
+		}
+	},
+	getFolderFullDataByPath: {
+		in: {
+			folderPath: types.string
+		},
+		out: {
+			accept: extract('folderData')
+		}
+	},
+	getLatestManifest: {},
+	GetSalesForceContact: {
+		in: {
+			contactId: types.numberOrString
+		},
+		out: {
+			accept: everything
+		}
+	},
+	getSalesforceContactIfEnabledElseNative: {
+		out: {
+			accept: everything
+		}
+	},
+	GetSelectedContactsIndependentOfSessionType: {
+		out: {
+			accept: extract('typeIndependentContacts')
+		}
+	},
+	getThumbnailForFileId: {
+		in: {
+			fileId: types.numberOrString
+		},
+		out: {
+			accept: extract('base64EncodedJpeg')
+		}
+	},
+	getXMLForFileId: {
+		in: {
+			fileId: types.numberOrString
+		},
+		out: {
+			accept: everything
+		}
+	},
+	getXMLForFileName: {
+		in: {
+			fileName: types.string
+		},
+		out: {
+			accept: everything
+		}
+	},
+	HideCloseButton: {
+		in: {
+			fileId: types.numberOrString
+		},
+		out: {
+			check: alwaysSucceeds
+		}
+	},
+	hideHtmlSelection: {},
+	presentSalesforceCalendar: {},
+	presentSalesforceMenuFromButtonWithId: {
+		in: {
+			buttonId: types.numberOrString
+		}
+	},
+	reportPageChange: {
+		in: {
+			newPage: types.numberOrString
+		},
+		out: {
+			check: alwaysSucceeds
+		}
+	},
+	searchForTerm: {
+		in: {
+			enableLiveUpdates: optional(types.boolean),
+			searchForTerm: types.string
+		},
+		out: {
+			accept: extract('files')
+		},
+		link: ['searchForTerm', 'enableLiveUpdates']
+	},
+	SendEmail: {
+		in: {
+			to: types.arrayOf(types.string),
+			cc: optional(types.arrayOf(types.string)),
+			bcc: optional(types.arrayOf(types.string)),
+			body: types.string,
+			company: types.string,
+			subject: types.string,
+			queueIfNotAbleToSend: types.boolean,
+			attachmentDataBase64Encoded: types.string,
+			attachmentName: types.string,
+			disableEmailTemplate: types.boolean,
+			disableAttachment: types.boolean
+		},
+		link: [
+			'to','cc','bcc','body','company','subject'
+			,'queueIfNotAbleToSend','disableEmailTemplate','disableAttachment'
+			,'attachmentName','attachmentDataBase64Encoded'
+		]
+	},
+	sendEmailForFiles: {
+		in: {
+			to: types.arrayOf(types.objectOf({name: types.string, email: types.string})),
+			cc: optional(types.arrayOf(types.string)),
+			bcc: optional(types.arrayOf(types.string)),
+			fileIds: types.arrayOf(types.numberOrString),
+			body: types.string,
+			company: types.string,
+			subject: types.string,
+			includeAnnotation: types.boolean,
+			sendAsLink: types.boolean,
+			sendAsAttachment: types.boolean,
+			compressOutputAtNumberOfBytes: types.valueOf(-1)
+		},
+		link: [
+			'to','cc','bcc','fileIds','body','company','subject','includeAnnotation',
+			'sendAsLink','sendAsAttachment','compressOutputAtNumberOfBytes'
+		]
+	},
+	setCompletedToTrue: {
+		in: {
+			fileId: types.numberOrString
+		},
+		out: {
+			check: alwaysSucceeds
+		}
+	},
+	showHtmlSelectionForHTMLPaths: {
+		in: {
+			htmlPaths: types.arrayOf(types.string)
+		}
+	},
+	snapshotCurrentPage: {
+		in: {
+			pageName: types.string
+		},
+		out: {
+			check: alwaysSucceeds
+		}
+	},
+	startSessionWithSalesforceContactId: {
+		in: {
+			contactId: types.numberOrString
+		}
+	},
+	startSessionWithoutContact: {},
+	SupressFileToolbar: {
+		in: {
+			fileId: types.numberOrString
+		},
+		out: {
+			check: alwaysSucceeds
+		}
+	},
+	toggleFavoriteStatusForFileWithId: {
+		in: {
+			fileId: types.numberOrString
+		}
+	},
+	toggleTagStatusForFileWithId: {
+		in: {
+			fileId: types.numberOrString
+		}
+	},
+	useVabletGUIToSendEmailForFiles: {
+		in: {
+			fileIds: types.arrayOf(types.numberOrString),
+			to: types.arrayOf(types.objectOf({name: types.string, email: types.string})),
+			cc: optional(types.arrayOf(types.string)),
+			bcc: optional(types.arrayOf(types.string)),
+			body: types.string,
+			subject: types.string
+		},
+		link: ['fileIds', 'to', 'bcc', 'cc', 'body', 'subject']
+	},
+	//////// Un-documented, but still used in production ... ?
+	GetInfoManifest: {
+		out: {
+			accept: extract('infoManifest')
+		}
+	},
+	GetSalesForceSelectedContacts: {
+		out: {
+			accept: extract('contacts')
+		}
+	}
+/* 
+	// Example with all all defaults
+	example:
+		{
+			in: {
+				arg2: types.number,
+				arg1: optional(types.arrayOf(types.string)),
+			},
+			out: {
+				check: stdCheck,
+				reject: stdErr,
+				accept: extract('keyName')
+			},
+			link: ['arg1','arg2']
+		}
+*/
+}
+
+var vablet = buildApi(vabletSpec,arrayLinker,vabletDispatch)
+	.registerFunction('getIdForFileName', function(fileName){
+		var vablet = this;
+		function searchForOne(fileName) {
+			return vablet.searchForTerm(fileName, false).then(function(files){
+				var exactMatches = files.filter(function(file){
+					return file.title === fileName;
+				});
+
+				if(!exactMatches.length) {
+					throw new Error("No matches for " + fileName);
+				} else {
+					return exactMatches[0].fileId;
+				}
+			});
+		}
+
+		return flatMapPromises(searchForOne, fileName);
+	})
+	.registerFunction('getFileNameForId', function(fileId){
+		var vablet = this;
+		function searchForOne(fileId) {
+			return vablet.getFileWithId(fileId).then(function(file){
+				return file.title;
+			});
+		}
+		return flatMapPromises(searchForOne, fileId);
+	})
+	.registerFunction('loadHCPInfo', function(){
+		var vablet = this;
+		return vablet.GetSalesForceSelectedContacts().then(function(contacts){
 			var firstContact = response.contacts[0];
 			return {
 				firstName: firstContact.FirstName,
 				lastName: firstContact.LastName,
 				email: firstContact.Email
 			}
-		}
-	});
-
-}).registerFunction('loadSalesRepInfo', function(){
-	return this.GetInfoManifest().then(function(manifest){
-		return {
-			firstName: manifest.infoManifest.FirstName,
-			lastName: manifest.infoManifest.LastName,
-			email: manifest.infoManifest.Email
-		}
-	});
-});
-
-function flatMap(func, xs) {
-	if(!Array.isArray(xs)) xs = [xs];
-
-	return Q.allSettled(xs.map(function(x){
-		return func(x);
-	})).then(function(results){
-		return results.filter(function(result){ return result.state === "fulfilled"})
-				.map(function(result){ return result.value });
-	});
-}
-
-var address = {
-	address: function(email, name) {
-			name = name? name : email;
-			return {email: email, name: name};
-	},
-	addressList: function(xs) {
-		if(!xs) return [];
-		if(arguments.length > 1) xs = Array.apply(null, arguments);
-		if(!Array.isArray(xs)) xs = [xs];
-
-		var makeAddress = this.address;
-		return xs.map(function(x){
-			if(typeof x === 'string') {
-				return makeAddress(x,x);
-			} else {
-				return makeAddress(x.email, x.name);
+		});
+	})
+	.registerFunction('loadSalesRepInfo', function(){
+		var vablet = this;
+		return vablet.GetInfoManifest().then(function(infoManifest){
+			return {
+				firstName: infoManifest.FirstName,
+				lastName: infoManifest.LastName,
+				email: infoManifest.Email
 			}
 		});
-	},
-	emailList: function(xs) {
-		if(!xs) return [];
-		if(arguments.length > 1) xs = Array.apply(null, arguments);
-		if(!Array.isArray(xs)) xs = [xs];
+	})
+	.registerFunction('email', function(message, config){
+		var vablet = this;
+		config = config || {};
 
-		return xs.map(function(x){
-			if(typeof x === 'string') {
-				return x;
-			} else {
-				return x.email;
+		var address = {
+			address: function(email, name) {
+					name = name? name : email;
+					return {email: email, name: name};
+			},
+			addressList: function(xs) {
+				if(!xs) return [];
+				if(arguments.length > 1) xs = Array.prototype.slice.call(arguments);
+				if(!Array.isArray(xs)) xs = [xs];
+
+				var makeAddress = this.address;
+				return xs.map(function(x){
+					if(typeof x === 'string') {
+						return makeAddress(x,x);
+					} else {
+						return makeAddress(x.email, x.name);
+					}
+				});
+			},
+			emailList: function(xs) {
+				if(!xs) return [];
+				if(arguments.length > 1) xs = Array.prototype.slice.call(arguments);
+				if(!Array.isArray(xs)) xs = [xs];
+
+				return xs.map(function(x){
+					if(typeof x === 'string') {
+						return x;
+					} else {
+						return x.email;
+					}
+				})
 			}
-		})
-	}
-};
-vablet.registerFunction('email', function(message, config){
-	config = config || {};
+		};
 
-	if(message.attachments) {
-		var args = [
-			address.addressList(message.to),
-			address.emailList(message.cc),
-			address.emailList(message.bcc),
-			message.attachments,
-			message.body,
-			config.company,
-			message.subject,
-			config.includeAnnotation || false,
-			config.sendAsLink || true,
-			config.sendAsAttachment || false,
-			-1 // un-implemented compressOutputAtNumberOfBytes, -1 required
-		];
-		return this.sendEmailForFiles.apply(this, args);
-	} else {
-		var args = [
-			address.emailList(message.to),
-			address.emailList(message.cc),
-			address.emailList(message.bcc),
-			message.body,
-			config.company,
-			message.subject,
-			config.queueIfNotAbleToSend || true,
-			config.attachmentDataBase64Encoded,
-			config.attachmentName,
-			config.disableEmailTemplate || true,
-			config.disableAttachment || true
-		];
-		return this.SendEmail.apply(this, args);
-	}
-});
+		if(message.attachments) {
+			var args = [
+				address.addressList(message.to),
+				address.emailList(message.cc),
+				address.emailList(message.bcc),
+				message.attachments,
+				message.body,
+				config.company,
+				message.subject,
+				config.includeAnnotation || false,
+				config.sendAsLink || true,
+				config.sendAsAttachment || false,
+				-1 // un-implemented compressOutputAtNumberOfBytes, -1 required
+			];
+			return vablet.sendEmailForFiles.apply(vablet, args);
+		} else {
+			var args = [
+				address.emailList(message.to),
+				address.emailList(message.cc),
+				address.emailList(message.bcc),
+				message.body,
+				config.company,
+				message.subject,
+				config.queueIfNotAbleToSend || true,
+				config.attachmentDataBase64Encoded,
+				config.attachmentName,
+				config.disableEmailTemplate || true,
+				config.disableAttachment || true
+			];
+			return vablet.SendEmail.apply(vablet, args);
+		}
+	});
 
 return vablet;
-
 });
