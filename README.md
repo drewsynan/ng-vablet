@@ -27,6 +27,7 @@ vablet.reportPageChange(32);
 
 ```
 
+##Features
 In addition to providing all of the functions outlined in the documentation (as well as standardized versions that start with lowercase letters, per standard JS style), the library also provides 
 
 * a unified `vablet.email` function that encompases both `sendEmailForFiles` and `SendEmail`.
