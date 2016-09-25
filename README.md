@@ -2,10 +2,14 @@
 Angular bindings to the Vablet native interface
 
 #Getting started
-To install ng-vablet, add the script `<script src="ng-vablet.js"></script>` to your app's index.html page, and add `ngVablet` as a requirement as a dependency in the main app declaration. You can now inject `vablet` and `vablet-dev` wherever you need.
+To install ng-vablet, add the script `<script src="ng-vablet.js"></script>` to your app's index.html page, and add `ngVablet` as a dependency in the main app definition. You can now inject `vablet` and `vablet-dev` wherever you need.
 
 ##Basic usage
-ng-vablet uses a promise-based approach to wrapping the VabletNativeInterface.
+ng-vablet uses a promise-based approach to wrapping the `VabletNativeInterface`. It provides two services, `vablet` and `vablet-dev`, which are identical, except `vablet-dev` allows mocking of return values, and `vablet` ignores all calls to `.mock`.
+
+ngVablet can only be used after the `VabletNativeInterface` has loaded.
+
+Example usage:
 
 ```javascript
 vablet.getIdForFileName("My Great File")
