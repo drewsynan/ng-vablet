@@ -147,7 +147,13 @@ var types = {
 		}
 	};
 
-function Left(e) { throw new Error(e); }	
+function Left(e) { 
+	if(!IN_PRODUCTION) {
+		console.debug("vablet: " + e);
+	}
+	
+	throw new Error(e); 
+}	
 function Right(v) { return v; }
 function optional(t){
 	var f = function(x) {
