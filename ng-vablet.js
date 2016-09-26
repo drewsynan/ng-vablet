@@ -655,8 +655,8 @@ var vabletSpec = {
 			company: types.string,
 			subject: types.string,
 			queueIfNotAbleToSend: types.boolean,
-			attachmentDataBase64Encoded: types.string,
-			attachmentName: types.string,
+			attachmentDataBase64Encoded: optional(types.string),
+			attachmentName: optional(types.string),
 			disableEmailTemplate: types.boolean,
 			disableAttachment: types.boolean
 		},
@@ -873,18 +873,19 @@ var vablet = buildApi(vabletSpec,arrayLinker,vabletDispatch)
 			];
 			return vablet.sendEmailForFiles.apply(vablet, args);
 		} else {
+
 			var args = [
 				address.emailList(message.to),
 				address.emailList(message.cc),
 				address.emailList(message.bcc),
 				message.body,
-				config.company,
+				config.company || '',
 				message.subject,
 				config.queueIfNotAbleToSend || true,
-				config.attachmentDataBase64Encoded,
+				config.disableEmailTemplate || false,
+				config.disableAttachment || true,
 				config.attachmentName,
-				config.disableEmailTemplate || true,
-				config.disableAttachment || true
+				config.attachmentDataBase64Encoded
 			];
 			return vablet.SendEmail.apply(vablet, args);
 		}
