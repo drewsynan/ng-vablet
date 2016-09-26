@@ -170,9 +170,9 @@ function optional(t){
  * HELPER FUNCTIONS *
                     */
 
-function log(message) {
+function log() {
 	if(!IN_PRODUCTION) {
-		var args = Array.prototype.slice.call(arguments).unshift("vablet: ");
+		var args = ["vablet: "].concat(Array.prototype.slice.call(arguments));
 		console.debug.apply(null, args);
 	}
 }
@@ -439,7 +439,7 @@ function vabletDispatch(call) {
 				deferred.resolve(getMockValue(call));
 			}, getMockTimeout(call));
 		} catch(e) {
-			log(call, " failed with ", e);
+			log("call ", call, " failed with ", e);
 			deferred.reject(e);
 		}
 	} else {
@@ -454,7 +454,7 @@ function vabletDispatch(call) {
 				});
 			}
 		} catch(e) {
-			log(call, " failed with ", e);
+			log("call ", call, " failed with ", e);
 			deferred.reject(e);
 		}
 	}
