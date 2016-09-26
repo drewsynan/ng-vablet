@@ -148,10 +148,7 @@ var types = {
 	};
 
 function Left(e) { 
-	if(!IN_PRODUCTION) {
-		console.debug("vablet: " + e);
-	}
-	
+	log(e);
 	throw new Error(e); 
 }	
 function Right(v) { return v; }
@@ -172,6 +169,13 @@ function optional(t){
 /*
  * HELPER FUNCTIONS *
                     */
+
+function log(message) {
+	if(!IN_PRODUCTION) {
+		var args = Array.prototype.slice.call(arguments).unshift("vablet: ");
+		console.debug.apply(null, args);
+	}
+}
 
 function getSignature(funcName, funcSpec) {
 	var args = funcSpec.link.map(function(arg){
@@ -398,6 +402,8 @@ function buildApi(spec, linker, dispatcher) {
 			return Object.freeze(unmocked);
 		}
 
+		assembled.ignoreMock = assembled.unmock;
+
 
 		// aliases
 		Object.keys(assembled).filter(function(key){
@@ -424,13 +430,16 @@ function buildApi(spec, linker, dispatcher) {
 // Vablet Dispatch
 function vabletDispatch(call) {
 	// execute the call
+	log("starting call ", call);
 	var deferred = Q.defer();
 	if(isMockCall(call)) {
 		try {
 			window.setTimeout(function(){
+				log("response for ", call, " is ", getMockValue(call));
 				deferred.resolve(getMockValue(call));
 			}, getMockTimeout(call));
 		} catch(e) {
+			log(call, " failed with ", e);
 			deferred.reject(e);
 		}
 	} else {
@@ -440,10 +449,12 @@ function vabletDispatch(call) {
 				deferred.resolve(undefined);
 			} else {
 				VabletNativeInterface.callNativeMethod(getCallName(call), getCallArgs(call), function(response){
+					log("response for ", call, " is ", response);
 					deferred.resolve(response);
 				});
 			}
 		} catch(e) {
+			log(call, " failed with ", e);
 			deferred.reject(e);
 		}
 	}
