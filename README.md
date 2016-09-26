@@ -2,12 +2,12 @@
 Angular bindings to the Vablet native interface
 
 #Getting started
-To install ng-vablet, add the script `<script src="ng-vablet.js"></script>` to your app's index.html page, and add `ngVablet` as a dependency in the main app definition. You can now inject `vablet` and `vablet-dev` wherever you need.
+To install ng-vablet, add the script `<script src="ng-vablet.js"></script>` to your app's index.html page, and add `ngVablet` as a dependency in the main app definition. You can now inject `vablet` and `vabletDev` wherever you need.
 
-Alternatively, the library may be used on its own, without angular. Simply add `<script src="path/to/ng-vablet.js"></script>` in your document, which will create a global `vablet` and `vablet-dev` objects. This approach does require the `Q` library, as well as the `VabletNativeInterface` library to be present and loaded.
+Alternatively, the library may be used on its own, without angular. Simply add `<script src="path/to/ng-vablet.js"></script>` in your document, which will create a global `vablet` and `vabletDev` objects. This approach does require the `Q` library, as well as the `VabletNativeInterface` library to be present and loaded.
 
 ##Basic usage
-ng-vablet uses a promise-based approach to wrapping the `VabletNativeInterface`. It provides two services, `vablet` and `vablet-dev`, which are identical, except `vablet-dev` allows mocking of return values, and `vablet` ignores all calls to `.mock`.
+ng-vablet uses a promise-based approach to wrapping the `VabletNativeInterface`. It provides two services, `vablet` and `vabletDev`, which are identical, except `vabletDev` allows mocking of return values, and `vablet` ignores all calls to `.mock`.
 
 ngVablet can only be used after the `VabletNativeInterface` has loaded.
 
@@ -68,15 +68,15 @@ vablet.getIdForFileName(["great-stuff1.pdf","greatStuff3.pdf","notes.ppt"])
    });
 ```
 
-### vablet-dev.mock
-Mocking is only enabled on the vablet-dev binding. When using the normal `vablet` object, the mock function becomes a no-op, and is simply ignored, with all values being passed to the native interface.
+### vabletDev.mock
+Mocking is only enabled on the vabletDev binding. When using the normal `vablet` object, the mock function becomes a no-op, and is simply ignored, with all values being passed to the native interface.
 
 Example:
 
 ```javascript
-/* vablet-dev.mock(mockValue, mockTimeout) */
+/* vabletDev.mock(mockValue, mockTimeout) */
 
-var vablet = vablet-dev;
+var vablet = vabletDev;
 
 var unsuccessfulIO = vablet.mock({success: false, error: "My Error String"}, 500);
 
