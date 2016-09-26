@@ -59,7 +59,7 @@ vablet.getIdForFileName(["great-stuff1.pdf","greatStuff3.pdf","notes.ppt"])
   .then(function(files) {
     return messageWithAttachments = Object.assign({}, message).attachments = files;
    }).then(function(messageWithFiles) {
-    return vablet.sendEmail(messageWithFiles, config);
+    return vablet.email(messageWithFiles, config);
    }).then(function() {
     notify("Email sucessfully sent/queued");
    }).catch(function(e) {

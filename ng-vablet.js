@@ -10,7 +10,7 @@
     // angularJS
     if (typeof angular === "object") {
     	angular.module('ngVablet', [])
-    		   .provider('vablet-dev', function(){
+    		   .provider('vabletDev', function(){
     		   		this.$get = function($q){
     		   			return definition($q);
     		   		}
@@ -35,7 +35,8 @@
     // <script>
     } else {
     	if(typeof Q === "function") {
-        	vablet = definition(Q);
+        	vablet = definition(Q, true);
+        	vabletDev = definition(Q);
         } else {
         	throw new Error("Vablet: Could not find Q library");
         }
@@ -192,7 +193,8 @@ function stdCheck(response) {
 		return stdErr(response);
 	}
 }
-function alwaysSucceeds(x) { return true; }
+var alwaysSucceeds = function alwaysSucceeds(x) { return true; }
+alwaysSucceeds.__VOID_CALLBACK__ = true; // hacky magic, to deal with api funcs with no callbacks
 
 // Reject Functions
 
@@ -216,11 +218,14 @@ function everything(x) { return x; }
  * CALL OBJECTS *
  	 			*/
 // Standard Call
-function makeCall(funcName, funcArgs) {
-	return {name: funcName, args: funcArgs};
+function makeCall(funcName, funcArgs, isVoid) {
+	return {name: funcName, args: funcArgs, void: !!isVoid};
 }
 function getCallArgs(call) {
 	return call.args;
+}
+function isVoid(call) {
+	return !!call.isVoid;
 }
 
 // Mock Call
@@ -299,7 +304,7 @@ function buildApi(spec, linker, dispatcher) {
 			if(this.$$isMocked) {
 				apiCall = makeMockCall(this.$$mockValue, this.$$mockTimeout);
 			} else {
-				apiCall = makeCall(funcName,apiArgs);
+				apiCall = makeCall(funcName,apiArgs, !!funcSpec.out.check.__VOID_CALLBACK__);
 			}
 
 			return dispatcher(apiCall).then(digest(funcSpec.out));
@@ -424,9 +429,14 @@ function vabletDispatch(call) {
 		}
 	} else {
 		try {
-			VabletNativeInterface.callNativeMethod(getCallName(call), getCallArgs(call), function(response){
-				deferred.resolve(response);
-			});
+			if(isVoid(call)) {
+				VabletNativeInterface.callNativeMethod(getCallName(call), getCallArgs(call), function(){});
+				deferred.resolve(undefined);
+			} else {
+				VabletNativeInterface.callNativeMethod(getCallName(call), getCallArgs(call), function(response){
+					deferred.resolve(response);
+				});
+			}
 		} catch(e) {
 			deferred.reject(e);
 		}
@@ -773,7 +783,7 @@ var vablet = buildApi(vabletSpec,arrayLinker,vabletDispatch)
 	.registerFunction('loadHCPInfo', function(){
 		var vablet = this;
 		return vablet.GetSalesForceSelectedContacts().then(function(contacts){
-			var firstContact = response.contacts[0];
+			var firstContact = contacts[0];
 			return {
 				firstName: firstContact.FirstName,
 				lastName: firstContact.LastName,
