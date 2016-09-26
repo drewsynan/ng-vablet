@@ -852,7 +852,7 @@ var vablet = buildApi(vabletSpec,arrayLinker,vabletDispatch)
 				address.emailList(message.bcc),
 				message.attachments,
 				message.body,
-				config.company,
+				config.company || '',
 				message.subject,
 				config.includeAnnotation || false,
 				config.sendAsLink || true,
