@@ -10,6 +10,50 @@
     // angularJS
     if (typeof angular === "object") {
     	angular.module('ngVablet', [])
+    	.config(function ($provide) { // monkey patch $q
+    			// Via http://www.codeducky.org/q-allsettled-for-angular-promises/ 
+				  $provide.decorator("$q", function ($delegate) {
+
+				    /**
+				     * $q.allSettled returns a promise that is fulfilled with an array of promise state snapshots, 
+				     * but only after all the original promises have settled, i.e. become either fulfilled or rejected.
+				     * 
+				     * This method is often used in order to execute a number of operations concurrently and be 
+				     * notified when they all finish, regardless of success or failure.
+				     *
+				     * @param promises array or object of promises
+				     * @returns {Promise} when resolved will contain an an array or object of resolved or rejected promises.
+				     * A resolved promise have the form { status: "fulfilled", value: value }.  A rejected promise will have
+				     * the form { status: "rejected", reason: reason }.
+				     */
+				    function allSettled(promises) {
+				      var deferred = $delegate.defer(),
+				          counter = 0,
+				          results = angular.isArray(promises) ? [] : {};
+
+				      angular.forEach(promises, function(promise, key) {
+				        counter++;
+				        $delegate.when(promise).then(function(value) {
+				          if (results.hasOwnProperty(key)) return;
+				          results[key] = { status: "fulfilled", value: value };
+				          if (!(--counter)) deferred.resolve(results);
+				        }, function(reason) {
+				          if (results.hasOwnProperty(key)) return;
+				          results[key] = { status: "rejected", reason: reason };
+				          if (!(--counter)) deferred.resolve(results);
+				        });
+				      });
+
+				      if (counter === 0) {
+				        deferred.resolve(results);
+				      }
+
+				      return deferred.promise;
+				    }
+				    $delegate.allSettled = allSettled;
+				    return $delegate;
+				  })
+				})
     		   .provider('vabletDev', function(){
     		   		this.$get = function($q){
     		   			return definition($q);
@@ -568,7 +612,7 @@ var vabletSpec = {
 	addFileIdsToUserFolder: {
 		in: {
 			folderName: types.string,
-			fileIdArray: types.ArrayOf(types.numberOrString),
+			fileIdArray: types.arrayOf(types.numberOrString),
 		},
 		link: ['folderName', 'fileIdArray']
 	},
@@ -840,7 +884,7 @@ var vabletSpec = {
 }
 
 var vablet = buildApi(vabletSpec,arrayLinker,vabletDispatch)
-	.registerFunction('getIdForFileName', function(fileName){
+	.registerFunction('getIdForFileName', function(fileName, ignoreFailures){
 		var vablet = this;
 		function searchForOne(fileName) {
 			return vablet.searchForTerm(fileName, false).then(function(files){
@@ -856,7 +900,11 @@ var vablet = buildApi(vabletSpec,arrayLinker,vabletDispatch)
 			});
 		}
 
-		return flatMapPromises(searchForOne, fileName);
+		if(!!ignoreFailures) {
+			return flatMapIgnorePromises(searchForOne, fileName);
+		} else {
+			return flatMapPromises(searchForOne, fileName);
+		}
 	})
 	.registerFunction('getFileNameForId', function(fileId){
 		var vablet = this;
