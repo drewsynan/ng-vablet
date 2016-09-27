@@ -185,13 +185,42 @@ function getSignature(funcName, funcSpec) {
 }
 
 function flatMapPromises(func, xs) {
-	if(!Array.isArray(xs)) xs = [xs];
+	var singleton = !Array.isArray(xs);
+	var deferred = Q.defer();
 
-	return Q.allSettled(xs.map(function(x){
+	if(singleton) xs = [xs];
+
+	Q.all(xs.map(function(x){
 		return func(x);
-	})).then(function(results){
-		return results.filter(function(result){ return result.state === "fulfilled"}) // ignores rejected promises
-				.map(function(result){ return result.value });
+	})).then(function success(results){
+		if(singleton) {
+			deferred.resolve(results[0]);
+		} else {
+			deferred.resolve(results);
+		}
+	}, function error(e){
+		deferred.reject(e);
+	});
+
+	return deferred.promise;
+}
+
+function flatMapIgnorePromises(func, xs) {
+	var singleton = !Array.isArray(xs);
+
+	if(singleton) xs = [xs];
+
+	return Q.allSettled(xs.map(function(x) { return func(x); })).then(function(results){
+		var resultsList = results.filter(function(result){ 
+					result.state === "fulfilled" 
+				}).map(function(result){
+					return result.value;
+				});
+		if(singleton) {
+			return resultsList[0];
+		} else {
+			return resultsList;
+		}
 	});
 }
 
@@ -419,6 +448,46 @@ function buildApi(spec, linker, dispatcher) {
 			}
 		});
 
+		/*
+		// utils for link creation
+		assembled.utils = {
+			links: {
+				home: function(){
+					return "VabletGeneral://home";
+				},
+				openFile: function(fileId){
+					//returnsToCallerOnClose
+					//pageToReturnTo
+					//openIntoPage
+				},
+				openFileName: function(fileName){
+					//returnsToCallerOnClose
+					//pageToReturnTo
+					//openIntoPage
+				},
+				openFileNameInPowerPoint: function(fileName){
+					//returnsToCallerOnClose
+					//pageToReturnTo
+				},
+				openFolder: function(folderName){
+					//backFolderGoesToFileWithName
+					//backFolderGoesToFileWithNameTopLevelOnly
+				},
+				register: function(){
+					//firstName
+					//lastName
+					//email
+					//vabletID
+					//registrationKey
+					//groups
+				},
+				external: function(url) {
+					//externalBrowserHttp://website.url
+					//externalBrowserHttps://website.url
+				}
+			}
+		}; */
+
 		return Object.freeze(assembled);
 
 	}
@@ -499,7 +568,7 @@ var vabletSpec = {
 	addFileIdsToUserFolder: {
 		in: {
 			folderName: types.string,
-			fileIdArray: types.numberOrString,
+			fileIdArray: types.ArrayOf(types.numberOrString),
 		},
 		link: ['folderName', 'fileIdArray']
 	},
@@ -548,7 +617,7 @@ var vabletSpec = {
 	endSession: {},
 	getFileWithId: {
 		in: {
-			fildId: types.numberOrString
+			fileId: types.numberOrString
 		},
 		out: {
 			accept: extract('file')
@@ -638,13 +707,13 @@ var vabletSpec = {
 	},
 	searchForTerm: {
 		in: {
-			enableLiveUpdates: optional(types.boolean),
-			searchForTerm: types.string
+			enableLiveUpdates: types.boolean,
+			searchTerm: types.string
 		},
 		out: {
 			accept: extract('files')
 		},
-		link: ['searchForTerm', 'enableLiveUpdates']
+		link: ['searchTerm', 'enableLiveUpdates']
 	},
 	SendEmail: {
 		in: {
@@ -800,7 +869,7 @@ var vablet = buildApi(vabletSpec,arrayLinker,vabletDispatch)
 	})
 	.registerFunction('loadHCPInfo', function(){
 		var vablet = this;
-		return vablet.GetSalesForceSelectedContacts().then(function(contacts){
+		return vablet.GetSelectedContactsIndependentOfSessionType().then(function(contacts){
 			var firstContact = contacts[0];
 			return {
 				firstName: firstContact.FirstName,
@@ -888,6 +957,13 @@ var vablet = buildApi(vabletSpec,arrayLinker,vabletDispatch)
 				config.attachmentDataBase64Encoded
 			];
 			return vablet.SendEmail.apply(vablet, args);
+		}
+	}).registerFunction('getCurrentFileInfo', function(){
+		var deferred = Q.defer();
+		if(currentVabletFileInfo) {// global var
+			deferred.resolve(currentVabletFileInfo);
+		} else {
+			deferred.reject("Could not get current file info");
 		}
 	});
 
