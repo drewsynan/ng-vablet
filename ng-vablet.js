@@ -217,7 +217,7 @@ function optional(t){
 function log() {
 	if(!IN_PRODUCTION) {
 		var args = ["vablet:"].concat(Array.prototype.slice.call(arguments));
-		console.debug.apply(null, args);
+		console.debug.apply(console, args);
 	}
 }
 
@@ -558,11 +558,13 @@ function vabletDispatch(call) {
 		}
 	} else {
 		try {
+			var vni = function(){ return window.VabletNativeInterface; };
+
 			if(isVoid(call)) {
-				VabletNativeInterface.callNativeMethod(getCallName(call), getCallArgs(call), function(){});
+				vni().callNativeMethod(getCallName(call), getCallArgs(call), function(){});
 				deferred.resolve(undefined);
 			} else {
-				VabletNativeInterface.callNativeMethod(getCallName(call), getCallArgs(call), function(response){
+				vni().callNativeMethod(getCallName(call), getCallArgs(call), function(response){
 					log("response for ", call, " is ", response);
 					deferred.resolve(response);
 				});
