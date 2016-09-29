@@ -84,4 +84,4 @@ unsuccessfulIO.email(message, config).then(function() {
   console.log("success!");
 }).catch(function(e) {
   console.log(e)
-}); // logs "My Error String" after 500 ms
+}); // logs "My Error String" + stack trace after 500 ms
