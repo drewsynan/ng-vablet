@@ -1,5 +1,5 @@
 # ng-vablet
-Angular bindings to the Vablet native interface
+☢️ Angular bindings to the Vablet native interface
 
 #Getting started
 To install ng-vablet, add the script `<script src="ng-vablet.js"></script>` to your app's index.html page, and add `ngVablet` as a dependency in the main app definition. You can now inject `vablet` and `vabletDev` wherever you need.
@@ -84,4 +84,4 @@ unsuccessfulIO.email(message, config).then(function() {
   console.log("success!");
 }).catch(function(e) {
   console.log(e)
-}); // logs "My Error String" after 500 ms
+}); // logs "My Error String" + stack trace after 500 ms
