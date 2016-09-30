@@ -1,6 +1,4 @@
-(function (definition) {
-
-    // Turn off strict mode for this function so we can assign to global.vablet
+;(function (definition) {
 
     // This file will function properly as a <script> tag, or a module
     // using CommonJS and NodeJS or RequireJS module formats.  In
@@ -87,7 +85,7 @@
     }
 })(function vabletApi(Q,IN_PRODUCTION) {
 
-IN_PRODUCTION = IN_PRODUCTION || false;
+IN_PRODUCTION = !!IN_PRODUCTION;
 
 /*
  * TYPES *
@@ -954,10 +952,14 @@ var vablet = buildApi(vabletSpec,arrayLinker,vabletDispatch)
 
 				var makeAddress = this.address;
 				return xs.map(function(x){
-					if(typeof x === 'string') {
-						return makeAddress(x,x);
-					} else {
-						return makeAddress(x.email, x.name);
+					try {
+						if(typeof x === 'string') {
+							return makeAddress(x,x);
+						} else {
+							return makeAddress(x.email, x.name); // throws
+						}
+					} catch(e) {
+						return undefined;
 					}
 				});
 			},
@@ -967,12 +969,16 @@ var vablet = buildApi(vabletSpec,arrayLinker,vabletDispatch)
 				if(!Array.isArray(xs)) xs = [xs];
 
 				return xs.map(function(x){
-					if(typeof x === 'string') {
-						return x;
-					} else {
-						return x.email;
+					try {
+						if(typeof x === 'string') {
+							return x;
+						} else {
+							return x.email; // throws
+						}
+					} catch(e){
+						return undefined;
 					}
-				})
+				});
 			}
 		};
 
